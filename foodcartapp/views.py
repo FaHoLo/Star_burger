@@ -1,6 +1,6 @@
 from django.templatetags.static import static
 from django.http import JsonResponse
-from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -65,12 +65,29 @@ def register_order(request):
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
+    required_fields = ['firstname', 'lastname', 'phonenumber', 'address']
+    for field_name in required_fields:
+        field_value = serializer.data.get(field_name)
+        if not field_value:
+            return Response({'Error': f'Field {field_name} can\'t be null.'},
+                            status=HTTP_400_BAD_REQUEST)
+        elif not isinstance(field_value, str):
+            return Response({'Error': f'Field {field_name} must be string.'},
+                            status=HTTP_400_BAD_REQUEST)
+
     products = serializer.data.get('products')
     if not products:
-        return Response({'Error': 'Got null products.'}, status=HTTP_400_BAD_REQUEST)
+        return Response({'Error': 'Field products can\'t be null.'}, status=HTTP_400_BAD_REQUEST)
     if not isinstance(products, list):
         return Response({'Error': 'Wrong products type, list expected.'},
                         status=HTTP_400_BAD_REQUEST)
+
+    for product_data in products:
+        try:
+            Product.objects.get(pk=product_data['product'])
+        except Product.DoesNotExist:
+            return Response({'Error': f'No such product: {product_data["product"]}'},
+                            status=HTTP_404_NOT_FOUND)
 
     order = Order.objects.create(
         firstname=serializer.data['firstname'],
