@@ -1,9 +1,11 @@
-import json
-
 from django.templatetags.static import static
 from django.http import JsonResponse
+from rest_framework.status import HTTP_201_CREATED
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 from .models import Product, Order, OrderProduct
+from .serializers import OrderSerializer
 
 
 def banners_list_api(request):
@@ -58,19 +60,25 @@ def product_list_api(request):
     })
 
 
+@api_view(['POST'])
 def register_order(request):
-    order_data = json.loads(request.body.decode())
+    serializer = OrderSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
 
-    order, created = Order.objects.create(
-        first_name=order_data['firstname'],
-        last_name=order_data['lastname'],
-        phone_number=order_data['phonenumber'],
-        address=order_data['address']
+    order = Order.objects.create(
+        firstname=serializer.data['firstname'],
+        lastname=serializer.data['lastname'],
+        phonenumber=serializer.data['phonenumber'],
+        address=serializer.data['address']
     )
-    for product_data in order_data['products']:
-        OrderProduct.objects.create(
-            product=Product.objects.get(pk=product_data['product']),
-            quantity=product_data['quantity'],
-            order=order
+    order_products = [
+        OrderProduct(
+            product=Product.objects.get(pk=product['product']),
+            quantity=product['quantity'],
+            order=order,
         )
-    return JsonResponse({})
+        for product in serializer.data['products']
+    ]
+    OrderProduct.objects.bulk_create(order_products)
+
+    return Response(serializer.data, status=HTTP_201_CREATED)
