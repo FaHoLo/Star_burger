@@ -1,6 +1,6 @@
 from django.templatetags.static import static
 from django.http import JsonResponse
-from rest_framework.status import HTTP_201_CREATED
+from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -64,6 +64,13 @@ def product_list_api(request):
 def register_order(request):
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
+
+    products = serializer.data.get('products')
+    if not products:
+        return Response({'Error': 'Got null products.'}, status=HTTP_400_BAD_REQUEST)
+    if not isinstance(products, list):
+        return Response({'Error': 'Wrong products type, list expected.'},
+                        status=HTTP_400_BAD_REQUEST)
 
     order = Order.objects.create(
         firstname=serializer.data['firstname'],
