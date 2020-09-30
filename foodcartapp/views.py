@@ -65,43 +65,19 @@ def register_order(request):
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
-    required_fields = ['firstname', 'lastname', 'phonenumber', 'address']
-    for field_name in required_fields:
-        field_value = serializer.data.get(field_name)
-        if not field_value:
-            return Response({'Error': f'Field {field_name} can\'t be null.'},
-                            status=HTTP_400_BAD_REQUEST)
-        elif not isinstance(field_value, str):
-            return Response({'Error': f'Field {field_name} must be string.'},
-                            status=HTTP_400_BAD_REQUEST)
-
-    products = serializer.data.get('products')
-    if not products:
-        return Response({'Error': 'Field products can\'t be null.'}, status=HTTP_400_BAD_REQUEST)
-    if not isinstance(products, list):
-        return Response({'Error': 'Wrong products type, list expected.'},
-                        status=HTTP_400_BAD_REQUEST)
-
-    for product_data in products:
-        try:
-            Product.objects.get(pk=product_data['product'])
-        except Product.DoesNotExist:
-            return Response({'Error': f'No such product: {product_data["product"]}'},
-                            status=HTTP_404_NOT_FOUND)
-
     order = Order.objects.create(
-        firstname=serializer.data['firstname'],
-        lastname=serializer.data['lastname'],
-        phonenumber=serializer.data['phonenumber'],
-        address=serializer.data['address']
+        firstname=serializer.validated_data['firstname'],
+        lastname=serializer.validated_data['lastname'],
+        phonenumber=serializer.validated_data['phonenumber'],
+        address=serializer.validated_data['address']
     )
     order_products = [
         OrderProduct(
-            product=Product.objects.get(pk=product['product']),
+            product=product['product'],
             quantity=product['quantity'],
             order=order,
         )
-        for product in serializer.data['products']
+        for product in serializer.validated_data['products']
     ]
     OrderProduct.objects.bulk_create(order_products)
 
