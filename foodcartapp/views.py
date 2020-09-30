@@ -81,4 +81,6 @@ def register_order(request):
     ]
     OrderProduct.objects.bulk_create(order_products)
 
-    return Response(serializer.data, status=HTTP_201_CREATED)
+    order_serializer = OrderSerializer(order)
+
+    return Response(order_serializer.data, status=HTTP_201_CREATED)

@@ -10,7 +10,7 @@ class OrderProductSerializer(ModelSerializer):
 
 
 class OrderSerializer(ModelSerializer):
-    products = OrderProductSerializer(many=True)
+    products = OrderProductSerializer(many=True, write_only=True)
 
     def validate_products(self, value):
         """Empty list validation."""
@@ -20,4 +20,4 @@ class OrderSerializer(ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['firstname', 'lastname', 'phonenumber', 'address', 'products']
+        fields = ['id', 'firstname', 'lastname', 'phonenumber', 'address', 'products']
