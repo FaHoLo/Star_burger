@@ -1,6 +1,6 @@
 from django.templatetags.static import static
 from django.http import JsonResponse
-from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
+from rest_framework.status import HTTP_201_CREATED
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
