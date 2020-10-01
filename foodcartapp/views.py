@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.templatetags.static import static
 from django.http import JsonResponse
 from rest_framework.status import HTTP_201_CREATED
@@ -60,6 +61,7 @@ def product_list_api(request):
     })
 
 
+@transaction.atomic
 @api_view(['POST'])
 def register_order(request):
     serializer = OrderSerializer(data=request.data)
