@@ -76,6 +76,7 @@ def register_order(request):
             product=product['product'],
             quantity=product['quantity'],
             order=order,
+            total_price=product['product'].price * product['quantity'],
         )
         for product in serializer.validated_data['products']
     ]

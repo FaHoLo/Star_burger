@@ -85,6 +85,7 @@ class OrderProduct(models.Model):
     quantity = models.IntegerField('количество', validators=[MinValueValidator(1)])
     order = models.ForeignKey(Order, verbose_name='заказ', on_delete=models.CASCADE,
                               related_name='products')
+    total_price = models.DecimalField('цена', max_digits=8, decimal_places=2)
 
     class Meta:
         verbose_name = 'продукт заказа'
