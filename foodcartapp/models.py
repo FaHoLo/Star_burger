@@ -76,6 +76,12 @@ class Order(models.Model):
         (DELIVERY, 'Доставка'),
         (DELIVERED, 'Доставлен'),
     ]
+    CASH = 'CSH'
+    ONLINE = 'ONL'
+    PAYMENT_METHOD_CHOICES = [
+        (CASH, 'Наличными'),
+        (ONLINE, 'Онлайн'),
+    ]
     firstname = models.CharField('имя', max_length=30)
     lastname = models.CharField('фамилия', max_length=50)
     phonenumber = models.CharField(verbose_name='номер телефона', max_length=20)
@@ -85,6 +91,8 @@ class Order(models.Model):
     registered_at = models.DateTimeField('зарегистрирован в', default=timezone.now)
     called_at = models.DateTimeField('звонок совершен в', blank=True, null=True)
     delivered_at = models.DateTimeField('доставлен в', blank=True, null=True)
+    payment_method = models.CharField('способ оплаты', max_length=3,
+                                      choices=PAYMENT_METHOD_CHOICES, default=CASH)
 
     def __str__(self):
         return f'{self.firstname} {self.lastname} {self.address}'
