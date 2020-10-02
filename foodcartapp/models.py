@@ -79,7 +79,7 @@ class Order(models.Model):
     lastname = models.CharField('фамилия', max_length=50)
     phonenumber = models.CharField(verbose_name='номер телефона', max_length=20)
     address = models.TextField('адрес доставки')
-    status = models.CharField(max_length=3, choices=STATUS_CHOISES, default=UNPROCESSED)
+    status = models.CharField('статус', max_length=3, choices=STATUS_CHOISES, default=UNPROCESSED)
 
     def __str__(self):
         return f'{self.firstname} {self.lastname} {self.address}'
