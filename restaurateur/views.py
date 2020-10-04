@@ -117,6 +117,8 @@ def view_orders(request):
                 order_product.order.total_price += order_product.total_price
                 handled_order_products.add(order_product)
 
+    orders = sorted(list(orders), key=lambda order: order.id)
+
     return render(request, template_name='order_items.html', context={
         'order_items': orders
     })
