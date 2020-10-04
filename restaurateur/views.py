@@ -1,5 +1,4 @@
 from django import forms
-from django.db.models import Sum
 from django.shortcuts import redirect, render
 from django.views import View
 from django.urls import reverse_lazy
@@ -8,7 +7,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
-from foodcartapp.models import Product, Restaurant, Order
+from foodcartapp.models import Product, Restaurant, RestaurantMenuItem
 
 
 class Login(forms.Form):
@@ -97,7 +96,27 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    orders = Order.objects.annotate(total_price=Sum('products__total_price'))
+    rest_menu_items = RestaurantMenuItem.objects.select_related('restaurant', 'product') \
+        .prefetch_related('product__orderproduct_set__order')
+
+    orders = set()
+    handled_order_products = set()
+    for menu_item in rest_menu_items:
+        if not menu_item.availability:
+            continue
+        for order_product in menu_item.product.orderproduct_set.all():
+            try:
+                order_product.order.restaurants
+            except AttributeError:
+                order_product.order.restaurants = set()
+                order_product.order.total_price = 0
+
+            orders.add(order_product.order)
+            order_product.order.restaurants.add(menu_item.restaurant.name)
+            if order_product not in handled_order_products:
+                order_product.order.total_price += order_product.total_price
+                handled_order_products.add(order_product)
+
     return render(request, template_name='order_items.html', context={
         'order_items': orders
     })
