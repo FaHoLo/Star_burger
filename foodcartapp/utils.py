@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from geopy.distance import distance
 import requests
 
@@ -16,6 +17,14 @@ def fetch_coordinates(apikey, place):
 
 
 def get_restaurant_distance(apikey, order_address, restaurant_address):
-    order_coords = fetch_coordinates(apikey, order_address)
-    restaurant_coords = fetch_coordinates(apikey, restaurant_address)
-    return round(distance(order_coords, restaurant_coords).kilometers, 3)
+    all_coords = []
+    for address in (order_address, restaurant_address):
+        coords = cache.get(address)
+        if coords:
+            all_coords.append(coords)
+            continue
+        coords = fetch_coordinates(apikey, address)
+        cache.set(address, coords, None)
+        all_coords.append(coords)
+
+    return round(distance(*all_coords).kilometers, 3)
