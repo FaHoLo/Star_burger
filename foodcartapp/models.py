@@ -1,6 +1,9 @@
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
+from django.conf import settings
+
+from .utils import get_restaurant_distance
 
 
 class Restaurant(models.Model):
@@ -67,6 +70,55 @@ class RestaurantMenuItem(models.Model):
         ]
 
 
+class OrderQuerySet(models.QuerySet):
+    def all_with_restaurants(self) -> list:
+        """Get all orders with restaurant names and distances to them.
+
+        This query use RestaurantMenuItem model as entry point to reduce
+        the number of queries.
+
+        Environments:
+            GEOCODER_KEY: yandex geocoder api key, docs here:
+                https://yandex.ru/dev/maps/geocoder/
+
+        Returns:
+            sorted_orders: collected and sorted by id orders with restaurants data
+        """
+        rest_menu_items = RestaurantMenuItem.objects.select_related('restaurant', 'product') \
+            .prefetch_related('product__orderproduct_set__order')
+
+        apikey = settings.GEOCODER_KEY
+        orders = set()
+        handled_order_products = set()
+        for menu_item in rest_menu_items:
+            if not menu_item.availability:
+                continue
+            for order_product in menu_item.product.orderproduct_set.all():
+                try:
+                    order_product.order.restaurants
+                except AttributeError:
+                    order_product.order.restaurants = dict()
+                    order_product.order.total_price = 0
+
+                orders.add(order_product.order)
+
+                if menu_item.restaurant.name not in order_product.order.restaurants.keys():
+                    order_product.order.restaurants[menu_item.restaurant.name] = \
+                        get_restaurant_distance(
+                            apikey, order_product.order.address,
+                            menu_item.restaurant.address)
+
+                if order_product not in handled_order_products:
+                    order_product.order.total_price += order_product.total_price
+                    handled_order_products.add(order_product)
+
+        sorted_orders = sorted(list(orders), key=lambda order: order.id)
+        for order in sorted_orders:
+            # order.restaurants is dict of resta_name: distance_to_resta
+            order.restaurants = sorted(order.restaurants.items(), key=lambda rest: rest[1])
+        return sorted_orders
+
+
 class Order(models.Model):
     UNPROCESSED = 'UNP'
     DELIVERY = 'DLV'
@@ -93,6 +145,8 @@ class Order(models.Model):
     delivered_at = models.DateTimeField('доставлен в', blank=True, null=True)
     payment_method = models.CharField('способ оплаты', max_length=3,
                                       choices=PAYMENT_METHOD_CHOICES, default=CASH)
+
+    objects = OrderQuerySet.as_manager()
 
     def __str__(self):
         return f'{self.firstname} {self.lastname} {self.address}'

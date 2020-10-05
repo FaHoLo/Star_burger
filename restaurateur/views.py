@@ -1,5 +1,3 @@
-import os
-
 from django import forms
 from django.shortcuts import redirect, render
 from django.views import View
@@ -9,8 +7,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
-from foodcartapp.models import Product, Restaurant, RestaurantMenuItem
-from .utils import get_restaurant_distance
+from foodcartapp.models import Product, Restaurant, Order
 
 
 class Login(forms.Form):
@@ -99,36 +96,7 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    rest_menu_items = RestaurantMenuItem.objects.select_related('restaurant', 'product') \
-        .prefetch_related('product__orderproduct_set__order')
-
-    apikey = os.getenv('GEOCODER_KEY')
-    orders = set()
-    handled_order_products = set()
-    for menu_item in rest_menu_items:
-        if not menu_item.availability:
-            continue
-        for order_product in menu_item.product.orderproduct_set.all():
-            try:
-                order_product.order.restaurants
-            except AttributeError:
-                order_product.order.restaurants = dict()
-                order_product.order.total_price = 0
-
-            orders.add(order_product.order)
-
-            if menu_item.restaurant.name not in order_product.order.restaurants.keys():
-                order_product.order.restaurants[menu_item.restaurant.name] = \
-                    get_restaurant_distance(
-                        apikey, order_product.order.address,
-                        menu_item.restaurant.address)
-
-            if order_product not in handled_order_products:
-                order_product.order.total_price += order_product.total_price
-                handled_order_products.add(order_product)
-
-    orders = sorted(list(orders), key=lambda order: order.id)
-
+    orders = Order.objects.all_with_restaurants()
     return render(request, template_name='order_items.html', context={
         'order_items': orders
     })
