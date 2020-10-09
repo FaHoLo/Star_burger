@@ -77,7 +77,7 @@ class OrderQuerySet(models.QuerySet):
         This query use RestaurantMenuItem model as entry point to reduce
         the number of queries.
 
-        Environments:
+        Required settings:
             GEOCODER_KEY: yandex geocoder api key, docs here:
                 https://yandex.ru/dev/maps/geocoder/
 
