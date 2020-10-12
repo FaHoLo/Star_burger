@@ -45,8 +45,8 @@ class ProductAdmin(admin.ModelAdmin):
         'category',
     ]
     search_fields = [
-        # FIXME SQLite can not convert letter case for cyrillic words properly, so search will be buggy.
-        # Migration to PostgreSQL is necessary
+        # FIXME SQLite can not convert letter case for cyrillic words properly,
+        # so search will be buggy. Migration to PostgreSQL is necessary
         'name',
         'category',
     ]
